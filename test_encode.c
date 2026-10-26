@@ -23,12 +23,16 @@ int main()
 
 OperationType check_operation_type(char opt)
 {
-    /*
-    if opt is 'e'
-        return e_encode
-    if opt is 'd'
-        return e_decode
-    return e_unsupported
-
-    */
+    if(opt == 'e')
+    {
+        return e_encode;
+    }
+    else if (opt == 'd')
+    {
+        return e_decode;
+    }
+    else
+    {
+        return e_unsupported;
+    }
 }
