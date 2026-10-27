@@ -171,14 +171,16 @@ Status do_encoding(EncodeInfo *encInfo)
 
     */
 }
-Status check_capacity(EncodeInfo *endInfo)
+Status check_capacity(EncodeInfo *encInfo)
 {
-    /*
-        -> encInfo -> size_secret_file = get_file_size(encInfo -> fptr_secret);
-        -> get_image_size_for_bmp(encInfo -> fptr_src_image) > ((get_file_size(encInfo -> fptr_secret) + 14) * 8)
-            ==> return e_sucess
-        -> return e_failure
-    */
+    
+        encInfo -> size_secret_file = get_file_size(encInfo -> fptr_secret);
+        if(get_image_size_for_bmp(encInfo -> fptr_src_image) > ((encInfo -> size_secret_file) + 14) * 8)
+        {
+            return e_success;
+        } 
+        return e_failure;
+    
 }
 
 uint get_file_size(FILE *fptr)
