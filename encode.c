@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "encode.h"
 #include "types.h"
+#include "common.h"
 
 /* Function Definitions */
 
@@ -147,29 +148,80 @@ Status read_and_validate_encode_args(char *argv[], EncodeInfo *encInfo)
 
 Status do_encoding(EncodeInfo *encInfo)
 {
-    /*
-        -> check_capacity (endInfo) == e_failure
-           print error msg, return e_failure
-        -> copy_bmp_header(endInfo -> fptr_src_image, endInfo -> fptr_stego_image) == e_failure
-           print error msg, return e_failure
-        -> encode_magic_string(MAGIC_STRING,endInfo) == e_failre
-            print error msg, return e_failure
+    // Check capacity
+    if (check_capacity(encInfo) == e_failure)
+    {
+        printf("ERROR: Image does not have enough capacity\n");
+        return e_failure;
+    }
 
-        -> char *dot = strchr(argv[3], '.')
-        -> strcpy(extn_secret_file, dot)
-        -> encode_secret_file_extn_size(strlen(extn_secret_file),encInfo) == e_failure
-           print error msg, return e_failure
-        -> encode_secret_file_extn(extn_secret_file, encInfo) == e_failure
-            print error msg, return e_failure
-        -> encode_secret_file_size( encInfo -> size_secret_file, encInfo) == e_failure
-            print error msg, return e_failure
-        -> encode_secret_file_data(encInfo) == e_failure
-            print error msg, return e_failure
-        -> copy_remaining_img_data(fptr_src_image, fptr_stego_image) == efailure
-            print error msg, return e_failure
+    // Copy BMP header
+    if (copy_bmp_header(encInfo->fptr_src_image,
+                        encInfo->fptr_stego_image) == e_failure)
+    {
+        printf("ERROR: Failed to copy BMP header\n");
+        return e_failure;
+    }
 
+    // Encode magic string
+    if (encode_magic_string(MAGIC_STRING, encInfo) == e_failure)
+    {
+        printf("ERROR: Failed to encode magic string\n");
+        return e_failure;
+    }
 
-    */
+    // Get secret file extension
+    char *dot = strchr(encInfo->secret_fname, '.');
+
+    if (dot == NULL)
+    {
+        printf("ERROR: Secret file extension not found\n");
+        return e_failure;
+    }
+
+    strcpy(encInfo->extn_secret_file, dot);
+
+    // Encode extension size
+    if (encode_secret_file_extn_size(
+            strlen(encInfo->extn_secret_file), encInfo) == e_failure)
+    {
+        printf("ERROR: Failed to encode extension size\n");
+        return e_failure;
+    }
+
+    // Encode secret file extension
+    if (encode_secret_file_extn(
+            encInfo->extn_secret_file, encInfo) == e_failure)
+    {
+        printf("ERROR: Failed to encode secret file extension\n");
+        return e_failure;
+    }
+
+    // Encode secret file size
+    if (encode_secret_file_size(
+            encInfo->size_secret_file, encInfo) == e_failure)
+    {
+        printf("ERROR: Failed to encode secret file size\n");
+        return e_failure;
+    }
+
+    // Encode secret file data
+    if (encode_secret_file_data(encInfo) == e_failure)
+    {
+        printf("ERROR: Failed to encode secret file data\n");
+        return e_failure;
+    }
+
+    // Copy remaining image data
+    if (copy_remaining_img_data(
+            encInfo->fptr_src_image,
+            encInfo->fptr_stego_image) == e_failure)
+    {
+        printf("ERROR: Failed to copy remaining image data\n");
+        return e_failure;
+    }
+
+    return e_success;
 }
 Status check_capacity(EncodeInfo *encInfo)
 {
@@ -186,117 +238,160 @@ Status check_capacity(EncodeInfo *encInfo)
 uint get_file_size(FILE *fptr)
 {
     fseek(fptr, 0, SEEK_END);
-    int size = ftell(fptr);
+    uint size = ftell(fptr);
+    rewind(fptr);
     return size;
-
-
-    /*
-        -> fseek() to SEEK_END
-        -> return ftell()
-    */
 }
 
 Status copy_bmp_header(FILE *fptr_src_image, FILE *fptr_dest_image)
 {
-    /*
-     * rewind(), src and secret files -> fread and fwrite
-     * Declare a buf of 54 bytes, char buff[54]
-     * Read 54 bytes from drc image to buff
-     * Write 54 bytes from buff to dest images
-     */
+    char buffer[54];
+    rewind(fptr_src_image);
+
+    if(fread(buffer, 1, 54, fptr_src_image) != 54)
+    {
+        return e_failure;
+    }
+    if(fwrite(buffer, 1, 54, fptr_dest_image) != 54)
+    {
+        return e_failure;
+    }
+    return e_success;
 }
 
 Status encode_magic_string(const char *magic_string, EncodeInfo *encInfo)
 {
-    /*
-        -> Declare a buff of 8bytes
-
-        => Run a loop for 2 times(or length of the magic string)
-            ->Read 8bytes from src_image into buff
-            ->encode_byte_to_lsb(magic_string[],buff);
-            -> write 8 bytes of encoder data from buff to dest_image
-
-        => return e_sucess
-    */
+    char buffer[8];
+    for(int i = 0; i < strlen(magic_string); i++)
+    {
+        if (fread(buffer, 1, 8, encInfo->fptr_src_image) != 8)
+        {
+            return e_failure;
+        }  
+        encode_byte_to_lsb(magic_string[i], buffer);
+        if(fwrite(buffer,1,8,encInfo -> fptr_stego_image) != 8)
+        {
+            return e_failure;
+        }
+    }
+    return e_success;
+    
 }
 
 Status encode_byte_to_lsb(char data, char *image_buffer)
 {
-    /*
-    ==> Loop for 8 times
-        * check the nth bit is set or not
-            -> if set, set the LSB if image_buffer[]
-            -> if clear, clear the LSB if image_buffer[]
-    => return e_sucess
-    */
+    for(int i = 0; i < 8; i++)
+    {
+        if(data  & (1 << i))
+        {
+            image_buffer[i] = image_buffer[i] | 1;
+        }
+        else
+        {
+            image_buffer[i] = image_buffer[i] & (~1);
+        }
+    }
+    return e_success;
+
 }
 
 Status encode_secret_file_extn_size(uint size, EncodeInfo *encInfo)
 {
-    /*
-        -> Declare a buff of 32 bytes
 
-        -> REad 32 bytes of buf from src_image
-        ->encode_size_to_lsb(size,buff)
-        ->write buff to dest_image
-    -> return e_sucess
-    */
+    char buffer[32];
+    if(fread(buffer, 1, 32, encInfo->fptr_src_image) != 32)
+    {
+        return e_failure;
+    }
+    encode_size_to_lsb(size,buffer);
+    if(fwrite(buffer,1,32,encInfo -> fptr_stego_image) != 32)
+    {
+        return e_failure;
+    }
+    return e_success;
 }
 
 Status encode_size_to_lsb(uint data, char *image_buffer)
 {
-    /*
-        ==> loop for 32 times
-            *check the nth bit is set or not
-                -> if set , set the LSB of image_buffer[]
-                -> if clear, clear the LSB of image_buffer[]
-        ==> return e_success
-    */
+    for(int i = 0; i < 32; i++)
+    {
+        if(data & (1u << i))
+        {
+            image_buffer[i] = image_buffer[i] | 1;
+        }
+        else
+        {
+            image_buffer[i] = image_buffer[i] & (~1);
+        }
+    }
+    return e_success;
 }
 
 Status encode_secret_file_extn(const char *file_extn, EncodeInfo *encInfo)
 {
-    /*
-        -> declear a buff of 8 bytes
-        => Run a loop for length of file_extn
-            -> Read 8 bytes from src_image into buff
-            -> encode_byte_to_lsb(file_extn[], buff);
-            -> write 8 bytesif encided data from buff to dest_image
-
-        ==> return e_success
-    */
+    char buffer[8];
+    int len = strlen(file_extn);
+    for(int i = 0; i < len; i++)
+    {
+        if(fread(buffer,1,8,encInfo -> fptr_src_image) != 8)
+        {
+            return e_failure;
+        }
+        encode_byte_to_lsb(file_extn[i],buffer);
+        if(fwrite(buffer,1,8,encInfo -> fptr_stego_image) != 8)
+        {
+            return e_failure;
+        }
+    }
+    return e_success;
 }
 
 Status encode_secret_file_size(long file_size, EncodeInfo *encInfo)
 {
-    /*
-        -> declare a buff of 32 bytes
-        -> read 32 bytes of buff from src_image
-        -> encode_size_to_lsb(size,buff)
-        -> write buff to dest_image
-    -> return e_success
-    */
+    char buffer[32];
+    if(fread(buffer,1,32,encInfo -> fptr_src_image) != 32)
+    {
+        return e_failure;
+    }
+    encode_size_to_lsb(file_size,buffer);
+    if(fwrite(buffer,1,32,encInfo -> fptr_stego_image) != 32)
+    {
+        return e_failure;
+    }
+    return e_success;
 }
 
 Status encode_secret_file_data(EncodeInfo *encInfo)
 {
-    /*
-        -> declare a buff of 8 bytes
-        char buff[8] , data;
-        => run a looop for Secret_file_size times
-        -> read 8 byte from src_image into buff
-        -> read a char from secret_file to data
-        ->encode _byte_to_lsb(data, buff)
-        -> write 8 bytes of encoded data from buff to dest_image
-        => return e_success
-    */
+    char buffer[8], data;
+    for(int i = 0; i < encInfo -> size_secret_file; i++)
+    {
+        if(fread(buffer,1,8,encInfo ->fptr_src_image) != 8)
+        {
+            return e_failure;
+        }
+        if(fread(&data,1,1,encInfo -> fptr_secret) != 1)
+        {
+            return e_failure;
+        }
+        encode_byte_to_lsb(data,buffer);
+        if(fwrite(buffer,1,8,encInfo -> fptr_stego_image) != 8)
+        {
+            return e_failure;
+        }
+    }
+    return e_success;
 }
 
 Status copy_remaining_img_data(FILE *fptr_src, FILE *fptr_dest)
 {
-    /*
-        => Run a looop till EOF
-         -> read a char from fptr_src
-         -> write the char to fptr_dest
-    */
+    int ch;
+    while((ch = fgetc(fptr_src)) != EOF)
+    {
+        if(fputc(ch,fptr_dest) == EOF)
+        {
+            return e_failure;
+        }
+    }
+    return e_success;
 }
