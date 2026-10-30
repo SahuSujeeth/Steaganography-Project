@@ -41,7 +41,7 @@ typedef struct _EncodeInfo
 OperationType check_operation_type(char opt);
 
 /* Read and validate Encode args from argv */
-Status read_and_validate_encode_args(char *argv[], EncodeInfo *encInfo);
+Status read_and_validate_encode_args(int argc,char *argv[], EncodeInfo *encInfo);
 
 /* Perform the encoding */
 Status do_encoding(EncodeInfo *encInfo);
