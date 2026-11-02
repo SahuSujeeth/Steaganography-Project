@@ -2,11 +2,12 @@
 #include <string.h>
 #include "encode.h"
 #include "types.h"
+#include "decode.h"
 
 int main(int argc, char *argv[])
 {
     EncodeInfo encInfo;
-    EncodeInfo decInfo;
+    DecodeInfo decInfo = {0};
 
     if (argc < 2)
     {
@@ -38,7 +39,31 @@ int main(int argc, char *argv[])
     }
     else if (op_type == e_decode)
     {
-        printf("Decoding will be implemented after discussing with your mentor.\n");
+        if (read_and_validate_decode_args(argc, argv, &decInfo) == e_success)
+        {
+            if (do_decoding(&decInfo) == e_success)
+            {
+                printf("Decoding completed successfully\n");
+            }
+            else
+            {
+                printf("Decoding failed\n");
+            }
+        }
+        else
+        {
+            printf("Invalid decoding arguments\n");
+        }
+
+        if (decInfo.fptr_stego_image != NULL)
+        {
+            fclose(decInfo.fptr_stego_image);
+        }
+
+        if (decInfo.fptr_output != NULL)
+        {
+            fclose(decInfo.fptr_output);
+        }
     }
     else
     {
