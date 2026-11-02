@@ -106,8 +106,6 @@ Status read_and_validate_encode_args(int argc,char *argv[], EncodeInfo *encInfo)
         {
             return e_failure;
         }
-
-        
     }
     else
     {
