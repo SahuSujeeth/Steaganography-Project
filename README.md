@@ -148,7 +148,7 @@ Through this project, I gained practical experience in:
 
 ## Author
 
-** Sahu Sujeeth**
+**Sahu Sujeeth**
 
 ECE Student | C Programming | Embedded Systems Enthusiast
 
